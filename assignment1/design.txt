@@ -1,0 +1,10 @@
+Stats
+
+1. Check for 1st option/arg
+  a. If no option/arg, accept numbers from standard input
+2. Check for -r or -c flags
+  a. If -columns or any abbreviation thereof, proceed to calculate column-wise
+  b. Else proceed to calculate row-wise
+3. Row-wise calculation
+  a. While nextchar != null (end of file):
+    i. 

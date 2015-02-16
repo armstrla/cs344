@@ -1,0 +1,187 @@
+#!/bin/bash
+
+#  Robert Hines (hinesro)
+#  CS 344-400, Benjamin Brewster
+#  January 19th, 2015
+
+#  stats - A script to read an input file and calculate the median and 
+#+ average of each row or column, depending on argument passed. If no file
+#+ is specified, the script will accept a single row of values from standard
+#+ input.
+
+####  Variables
+
+input_file=
+
+####  Functions
+
+usage_message()
+{
+    echo "Usage: \""$0" {-rows|-cols} [file]\"";
+    exit 1;
+};
+
+compute_rows()
+{
+    echo -e "Average:\tMedian:";
+
+    while read line
+    do
+        arr=($line)  
+        lineavg=0;
+        linemed=0;
+        medpos=0;
+        
+        #  Tally up totals for later division to find average
+        for (( i=0;i<${#arr[@]};i++ ))
+        do
+            let "lineavg+=${arr[$i]}"
+        done
+
+        cols=${#arr[@]}
+        #  Formula for rounding to the nearest whole number
+        let "lineavg=$lineavg+($cols/2)"
+        
+        #  Getting the average
+        let "lineavg/=$cols"
+        let "medpos=($cols/2)"
+        sorted=($(printf '%s\n' "${arr[@]}"|sort -g))
+
+        #  Rounding median to the position of the larger number if even
+        if [ $((cols%2)) -eq 0 ]; then
+            let "medpos--"
+            if [[ "arr[$medpos]" < "arr[$medpos+1]" ]]; then
+                let "medpos++"
+            fi
+        fi
+        let "linemed=${sorted[$medpos]}"
+
+        echo -e $lineavg '\t\t' $linemed
+    done<$input_file
+};
+
+compute_cols()
+{
+    a=($(wc $input_file))
+    rowcnt=${a[0]}
+    numcnt=${a[1]}
+    let "colcnt=($numcnt/$rowcnt)"
+
+    #  Grab numbers by column and store in tmp files
+    while read line
+    do
+        arr=($line)
+        for (( i=0;i<${#arr[@]};i++ ));
+        do
+            echo ${arr[$i]} >> $$.$i.tmp
+        done
+    done<$input_file
+
+    avgarr=
+    medarr=
+
+    #  Take columns back from tmp files and store in arrays
+    for (( i=0;i<$colcnt;i++ ));
+    do
+        IFS=$'\n' read -d '' -r -a arr < $$.$i.tmp
+        rm $$.$i.tmp
+
+        colavg=0;
+        colmed=0;
+        medpos=0;
+        
+        for (( j=0;j<${#arr[@]};j++ ));
+        do
+            let "colavg+=${arr[$j]}"
+        done
+
+        rows=${#arr[@]}
+        let "colavg=$colavg+($rows/2)"        
+
+        let "colavg/=$rows"
+        let "medpos=($rows/2)"
+        sorted=($(printf '%s\n' "${arr[@]}"|sort -g))
+
+        if [ $((rows%2)) -eq 0 ]; then
+            let "medpos--"
+            if [[ "arr[$medpos]" < "arr[$medpos+1]" ]]; then
+                let "medpos++"
+            fi
+        fi
+
+        colmed=${arr[$medpos]}
+        avgarr[$i]=$colavg
+        medarr[$i]=$colmed
+    done
+
+    echo "Averages:"
+    echo ${avgarr[@]}
+    echo "Medians:"
+    echo ${medarr[@]}
+};
+
+compute_stdin()
+{
+    echo "Please enter in the numeric values you'd like to process."
+    echo "Press Ctrl+D when finished."
+
+    while read line
+    do
+        arr=("${arr[@]}" $line)
+    done
+   
+    arr=($(printf '%s\n' "${arr[@]}"|sort -g))
+    avg=0;
+    med=0;
+    medpos=0;
+
+    for (( i=0;i<${#arr[@]};i++ ));
+    do
+        let "avg+=${arr[$i]}"
+    done
+
+    numvals=${#arr[@]}
+    let "avg=$avg+($numvals/2)"
+    
+    #numvals=${#arr[@]}
+    let "avg/=$numvals"
+    let "medpos=($numvals/2)"
+
+    if [ $((numvals%2)) -eq 0 ]; then
+        let "medpos--"
+        if [[ "arr[$medpos]" < "arr[$medpos+1]" ]]; then
+            let "medpos++"
+        fi
+    fi
+
+    med=${arr[$medpos]}
+    echo "Average: " $avg
+    echo "Median: " $med
+};
+
+####  Main
+clear; 
+
+if [[ "$1" == "" || -f "$1" ]]; then
+    usage_message
+elif [[ "$2" == "" ]]; then
+    compute_stdin
+elif [[ "$1" == -r* ]]; then
+    if [[ -f "$2" ]]; then
+        input_file=$2;
+        compute_rows
+    else
+        usage_message
+    fi
+elif [[ "$1" == -c* ]]; then
+    if [[ -f "$2" ]]; then
+        input_file=$2;
+        compute_cols
+    else
+        usage_message
+    fi
+else
+    usage_message
+fi
+
+trap "rm -f *.tmp" EXIT
