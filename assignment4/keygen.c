@@ -17,7 +17,8 @@ we’re not looking for cryptographically secure random number generation!
 void generateKey(int len);
 
 int main(int argc, char *argv[]){
-	int len;
+	srand(time(NULL)); // Generate random number seed
+	int len; // Length of key requested
 	
 	if (argc != 2) printf("Usage: %s <key-length>\n", argv[0]);
 	else {
@@ -29,5 +30,15 @@ int main(int argc, char *argv[]){
 }
 
 void generateKey(int len){
-	printf("Len was %d\n.", len);
+	//printf("Len was %d\n.", len);
+	int i;
+	char curChar, key[len+1];
+
+	for (i = 0; i < len; i++){
+		curChar = "ABCDEFGHIJKLMNOPQRSTUVWXYZ "[random () % 27];
+		key[i] = curChar;
+	}
+	key[len] = '\0';
+
+	printf("The generated key is:\n\n%s\n", key);
 }
