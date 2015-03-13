@@ -1,27 +1,18 @@
-/********************************
-* ASSIGNMENT #3 - SMALL SHELL (smallsh)
-* Author: Robert Hines
-* Date Created: 2/23/15
-* Filename: smallsh.c
-* CS344 - Benjamin Brewster
-********************************/
-
 #include <stdio.h> // printf, fprintf
 #include <stdlib.h> // malloc, realloc, free, exit, exec family
 #include <string.h> // strtok, strcmp
 #include <unistd.h> // chdir, fork, exec, pid_t, close
 #include <sys/wait.h> // Uses waitpid() and other macros
 #include <errno.h> // Track exit status
-#include <sys/types.h> // Various types used
-#include <sys/stat.h> // fstat()
-#include <fcntl.h> // File control
-#include <signal.h> // Signals
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h> // Open files
 
 #define TOK_DELIM " \t\r\n\a" // Deliminators for string tokenization
 
-char *readLine(); // Reads command in as a string
-char **splitLine(char *line); // Tokenizes command string into multiple parts
-int launch(char **args); // Launches non built-in jobs
+char *readLine();
+char **splitLine(char *line);
+int launch(char **args);
 
 int numArgs, isbg;
 
@@ -41,13 +32,10 @@ int main() {
 		line = readLine();
 		args = splitLine(line); // Extract each token from line, store in args[]
 
-		// Check if running in background and set the flag
-		if (!(strncmp(args[numArgs - 1], "&", 1))) {
-			isbg = 1;
-			args[numArgs - 1] = NULL; // Clear this token
-		}
+		// Check if running in background was specified by comparing the final argument
+		if (!(strncmp(args[numArgs - 1], "&", 1))) isbg = 1;
 
-		// Check for comments or blank commands
+		// Comments and blank commands
 		if(args[0] == NULL || !(strncmp(args[0], "#", 1))) {
 			exitStatus = 0; 
 		}
@@ -170,9 +158,6 @@ int launch(char **args) {
 	pid = fork(); // Fork the current process, creating a child process and storing it's pid for the parent
 
 	if (pid == 0) { // If pid == 0, this is the child process
-
-		// Establish sighandler for child here
-
 		if (execvp(args[0], args) == -1) { // Child process executes a new program using the passed arguments
 			printf("Command or file not recognized\n");
 			exit(1); // needs to exit this child.
@@ -181,16 +166,14 @@ int launch(char **args) {
 		perror("smallsh");
 	} else { // This is for the parent
     	// Fork executed successfully. Parent process waits for the child process specified with wpid
-
 		do {
-			if (isbg == 0) wpid = waitpid(pid, &status, WUNTRACED); // Uses macros provided with waitpid() to wait until child is exited or killed
-			else if (isbg == 1) wpid = waitpid(-1, &status, WNOHANG);
+			wpid = waitpid(pid, &status, WUNTRACED); // Uses macros provided with waitpid() to wait until child is exited or killed
 		} while (!WIFEXITED(status) && !WIFSIGNALED(status)); // Continue waiting for the child to exited or killed
 	}
 
-	if (isbg == 1) printf("Background PID: %d\nExit status: %d", pid, exitStatus); // Display child's process ID
-	// Parent checks status from child process to set exitStatus flag (0 is good, not interrupted is good)
+	// Check status from child process to set exitStatus flag (0 is good, not interrupted is good)
 	if (status != 0 || WIFSIGNALED(status)) exitStatus = 1;
+	//printf("217\n");
 
 	return exitStatus;
 }

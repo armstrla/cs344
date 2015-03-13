@@ -1,29 +1,20 @@
-/********************************
-* ASSIGNMENT #3 - SMALL SHELL (smallsh)
-* Author: Robert Hines
-* Date Created: 2/23/15
-* Filename: smallsh.c
-* CS344 - Benjamin Brewster
-********************************/
-
 #include <stdio.h> // printf, fprintf
 #include <stdlib.h> // malloc, realloc, free, exit, exec family
 #include <string.h> // strtok, strcmp
-#include <unistd.h> // chdir, fork, exec, pid_t, close
+#include <unistd.h> // chdir, fork, exec, and the pid_t type
 #include <sys/wait.h> // Uses waitpid() and other macros
 #include <errno.h> // Track exit status
-#include <sys/types.h> // Various types used
-#include <sys/stat.h> // fstat()
-#include <fcntl.h> // File control
-#include <signal.h> // Signals
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #define TOK_DELIM " \t\r\n\a" // Deliminators for string tokenization
 
-char *readLine(); // Reads command in as a string
-char **splitLine(char *line); // Tokenizes command string into multiple parts
-int launch(char **args); // Launches non built-in jobs
+char *readLine();
+char **splitLine(char *line);
+int launch(char **args);
 
-int numArgs, isbg;
+int numArgs;
 
 int main() {
 	int exitCalled = 0; // This will control the while loop
@@ -34,22 +25,15 @@ int main() {
 		printf(": ");
 		char *line = NULL; // This will store the line read from getLine
 		char **args; // This will store the tokenized arguments from line
-		int fd; // Future file descriptor 
+		int fd = 0, fd2 = 0, fd3 = 0, fd4 = 0;
 		numArgs = 0;
-		isbg = 0;
 
 		line = readLine();
 		args = splitLine(line); // Extract each token from line, store in args[]
+		// printf("There were %d arguments in that command\n", numArgs); // Debug
 
-		// Check if running in background and set the flag
-		if (!(strncmp(args[numArgs - 1], "&", 1))) {
-			isbg = 1;
-			args[numArgs - 1] = NULL; // Clear this token
-		}
-
-		// Check for comments or blank commands
-		if(args[0] == NULL || !(strncmp(args[0], "#", 1))) {
-			exitStatus = 0; 
+		if(args[0] == NULL || !(strncmp(args[0], "#", 1))) { // If an empty command or comment was entered,
+			exitStatus = 0; // ignore; signal the calling function to prompt for new input
 		}
 		
 		// Builtin #1: cd
@@ -80,51 +64,73 @@ int main() {
 		}
 
 		// Check for redirection in the command
-		else if (numArgs == 3 && ( (strcmp(args[1], ">") == 0) || (strcmp(args[1], "<") == 0) )) {
-			int savedStdout, savedStdin; // Save standard input and output to be restored after redirection
-			savedStdout = dup(1);
-			savedStdin = dup(0);
+		else if (numArgs == 3) {
 			if (strcmp(args[1], ">") == 0) {
 				fd = open(args[2], O_WRONLY|O_CREAT|O_TRUNC, 0644); // Open the file to be directed to, which is 1 index after '>'
+				//printf("%s set as output file\n", args[2]); // Debug
 				if (fd == -1) {
-					printf("No such file or directory\n");
+					//printf("Output file not found\n");
 					exitStatus = 1;
-				} else {
-					dup2(fd, 1); // Point stdout to this file
-
-					// Now that streams are established, terminate anything after the first command by setting a NULL value
-					args[1] = NULL;
-
-					close(fd); // Close unused file descriptor;
-					exitStatus = launch(args); // Attempt to launch command with arguments
 				}
-			} else if (strcmp(args[1], "<") == 0) {
-				fd = open(args[2], O_RDONLY); // Open the file to be read from
+				fd2 = dup2(fd, 1); // Point stdout to this file
+				//printf("%s set as output file\n", args[2]); // Debug
 				if (fd == -1) {
-					printf("No such file or directory\n");
+					//printf("Error redirecting standard output\n");
 					exitStatus = 1;
-				} else {
-					dup2(fd, 0); // Point stdout to this file
-
-					// Place the command in the first argument, and then NULL-terminate anything after
-					args[1] = NULL;
-					//args[2] = NULL;
-
-					close(fd); // Close unused file descriptor;
-					exitStatus = launch(args); // Attempt to launch command with arguments
 				}
+				// Now that streams are established, terminate anything after the first command by setting a NULL value
+				args[1] = NULL;
+				args[2] = NULL;
+				exitStatus = launch(args); // Attempt to launch command with arguments
+				close(fd);
+				close(fd2);
 			}
-			// Restore stdout and stdin
-			dup2(savedStdout, 1);
-			close(savedStdout);
-			dup2(savedStdin, 0);
-			close(savedStdin);
+		} else if (numArgs == 4) {
+			if (strcmp(args[2], ">") == 0 ) {
+				fd = open(args[3], O_WRONLY|O_CREAT|O_TRUNC, 0644); // Open the file to be directed to, which is 1 index after '>'
+				if (fd == -1) {
+					printf("Output file not found\n");
+					exitStatus = 1;
+				}
+				fd2 = dup2(fd, 1); // point stdout to it
+				if (fd == -1) {
+					printf("Error redirecting standard output\n");
+					exitStatus = 1;
+				}
+				fd3 = open(args[1], O_RDONLY); // Open the file to be read from, which comes before '>'
+				if (fd == -1) {
+					printf("Output file not found\n");
+					exitStatus = 1;
+					exit(1);
+				}
+				fd4 = dup2(fd, 0); // Point stdin to it
+				if (fd == -1) {
+					printf("Error redirecting standard input\n");
+					exitStatus = 1;
+				}
+				// Now that streams are established, terminate anything after the first command by setting a NULL value
+				args[1] = NULL;
+				args[2] = NULL;
+				args[3] = NULL;
+				exitStatus = launch(args); // Attempt to launch command with arguments
+				close(fd);
+				close(fd2);
+				close(fd3);
+			}
 		}
 
 		// All other non-builtins without arguments
 		else {
 			exitStatus = launch(args);
 		}
+
+		// Close file descriptors
+		//if (fd != 0) close(fd);
+		//if (fd2 != 0) close(fd2);
+		//if (fd3 != 0) close(fd3);
+		//if (fd4 != 0) close(fd4);
+
+		//printf("Does it make it here?\n");
 
 		// Deallocate memory
 		free(line);
@@ -168,29 +174,25 @@ int launch(char **args) {
 	int status, exitStatus = 0;
 
 	pid = fork(); // Fork the current process, creating a child process and storing it's pid for the parent
-
+	//printf("Fork was just called...\n");
 	if (pid == 0) { // If pid == 0, this is the child process
-
-		// Establish sighandler for child here
-
+		//printf("This is the child\n");
 		if (execvp(args[0], args) == -1) { // Child process executes a new program using the passed arguments
-			printf("Command or file not recognized\n");
+			printf("Command not recognized\n");
 			exit(1); // needs to exit this child.
 		}
 	} else if (pid < 0) { // If pid is less than 0, there was an error forking
 		perror("smallsh");
+		// Needs to exit>
 	} else { // This is for the parent
     	// Fork executed successfully. Parent process waits for the child process specified with wpid
-
 		do {
-			if (isbg == 0) wpid = waitpid(pid, &status, WUNTRACED); // Uses macros provided with waitpid() to wait until child is exited or killed
-			else if (isbg == 1) wpid = waitpid(-1, &status, WNOHANG);
-		} while (!WIFEXITED(status) && !WIFSIGNALED(status)); // Continue waiting for the child to exited or killed
+			wpid = waitpid(pid, &status, WUNTRACED); // Uses macros provided with waitpid() to wait until child is exited or killed
+		} while (!WIFEXITED(status) && !WIFSIGNALED(status)); // Continue waiting unless child is exited or killed
 	}
 
-	if (isbg == 1) printf("Background PID: %d\nExit status: %d", pid, exitStatus); // Display child's process ID
-	// Parent checks status from child process to set exitStatus flag (0 is good, not interrupted is good)
+	// Check status from child process to set exitStatus flag (0 is good, not interrupted is good)
 	if (status != 0 || WIFSIGNALED(status)) exitStatus = 1;
 
-	return exitStatus;
+	return exitStatus; // Return exit success
 }
