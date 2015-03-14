@@ -16,11 +16,11 @@ we’re not looking for cryptographically secure random number generation!
 
 void generateKey(int len);
 
-int main(int argc, char *argv[]){
+int main(int argc, char *argv[]) {
 	srand(time(NULL)); // Generate random number seed
 	int len; // Length of key requested
 	
-	if (argc != 2) printf("Usage: %s <key-length>\n", argv[0]);
+	if (argc != 2) printf("Usage: %s <key-length>\n", argv[0]); // Check for key-length argument
 	else {
 		len = atoi(argv[1]); // Do a type cast here
 		generateKey(len);
@@ -30,7 +30,6 @@ int main(int argc, char *argv[]){
 }
 
 void generateKey(int len){
-	//printf("Len was %d\n.", len);
 	int i;
 	char curChar, key[len+1];
 
@@ -40,5 +39,5 @@ void generateKey(int len){
 	}
 	key[len] = '\0';
 
-	printf("The generated key is:\n\n%s\n", key);
+	printf("%s\n", key);
 }
