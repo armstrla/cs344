@@ -11,5 +11,15 @@ ways.
 
 int main(){
 
+	// Create the socket endpoint - socket()
+
+
+	// Connect the socket to the server - connect()
+
+
+	// Use read() and write(), or send() and recv() to transfer data to and from the socket
+
+	
+
 	return 0;
 }
