@@ -122,7 +122,6 @@ int main(int argc, char *argv[]) {
     close(STDOUT_FILENO);
     close(STDERR_FILENO);
 
-
     // Initialize daemon
     sockfd = socket(AF_INET, SOCK_STREAM, 0); // Set socket file descriptor for IP, TCP
     if (sockfd < 0) {
@@ -202,7 +201,14 @@ int main(int argc, char *argv[]) {
         /////* USE KTXT TO ENCRYPT PTXT */////
         // First, ensure that ktxt is big enough for ptxt
         if (strlen(ktxt) < strlen(ptxt)) {
-            error("ERROR key is shorter than plaintext.\n");
+            //error("ERROR key is shorter than plaintext.\n");
+            bzero(sendbuf, BUFSIZE); // Clear the send buffer so it can be used safely
+            snprintf(sendbuf, BUFSIZE, "%s", "error1: key too short"); // Store the cipher string into the buffer
+            n = write(acceptfd, sendbuf, strlen(sendbuf)); // Write this message back to the client
+            if (n < 0) {
+                error("ERROR writing to socket.\n");
+            }
+            continue;
         }
 
         // Then encrypt each char and push to ctxt
@@ -220,6 +226,7 @@ int main(int argc, char *argv[]) {
             }
             ctxt[i] = alpha[cnums[i]];          // Set ctxt[i] equal to the corresponding resulting letter
         }
+        ctxt[strlen(ptxt)-1] = '\0'; // Null terminate the resulting message
 
         ////* WRITE BACK TO THE CLIENT *////
         bzero(sendbuf, BUFSIZE); // Clear the send buffer so it can be used safely

@@ -11,7 +11,7 @@
 
 void error(const char *msg) {
     perror(msg);
-    exit(0);
+    exit(1);
 }
 
 int main(int argc, char *argv[]) {
@@ -29,7 +29,6 @@ int main(int argc, char *argv[]) {
 
     if (sockfd < 0) {
         error("ERROR opening socket.\n");
-        exit(1);
     }
     
     bzero((char *) &serv_addr, sizeof(serv_addr));
@@ -48,7 +47,6 @@ int main(int argc, char *argv[]) {
     n = write(sockfd, buffer, strlen(buffer));
     if (n < 0) {
         error("ERROR writing argv[1] to socket.\n");
-        exit(1);
     }
 
     sleep(1);
@@ -58,7 +56,6 @@ int main(int argc, char *argv[]) {
     n = write(sockfd, buffer, strlen(buffer));
     if (n < 0) {
         error("ERROR writing to socket.\n");
-        exit(1);
     }
 
     /* RECEIVE SERVER RESPONSE */
@@ -66,10 +63,16 @@ int main(int argc, char *argv[]) {
     n = read(sockfd, buffer, BUFSIZE); // Waiting for server response
     if (n < 0) {
         error("ERROR reading from socket.\n");
-        exit(1);
     }
 
-    printf("%s\n", buffer);
+    if (buffer == "error1: key too short") {
+        error("ERROR Key not long enough.\n");
+    } else if (buffer == "error2") {
+        error("ERROR Bad characters in file.\n");
+    } else {
+        printf("%s\n", buffer);
+    }
+
     close(sockfd);
      
     return 0;

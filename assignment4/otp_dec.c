@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
     serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
     if (connect(sockfd,(struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-        printf("ERROR connecting to port %d.\n", portno);
+        printf("ERROR otp_dec could not find otp_dec_d.\n");
         exit(2);
     }
 
