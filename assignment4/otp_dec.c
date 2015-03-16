@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
     char buffer[BUFSIZE];
 
     if (argc < 4) {
-       fprintf(stderr,"Usage: %s plaintext key port\n", argv[0]);
+       fprintf(stderr,"Usage: %s ciphertext key port\n", argv[0]);
        exit(1);
     }
 

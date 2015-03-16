@@ -166,16 +166,16 @@ int main(int argc, char *argv[]) {
             error("ERROR opening plaintext file.\n");
         }
 
-        char ptxt[BUFSIZE]; // This will store plaintext string to be extracted from file
-        fgets(ptxt, BUFSIZE, fp); // Read file, store into ptxt
+        char ctxt[BUFSIZE]; // This will store ciphertext string to be extracted from file
+        fgets(ctxt, BUFSIZE, fp); // Read file, store into ctxt
 
-        for (i = 0; i < strlen(ptxt); i++) { // Convert plaintext to all upper case
-            ptxt[i] = toupper(ptxt[i]);
+        for (i = 0; i < strlen(ctxt); i++) { // Convert ciphertext to all upper case (if needed)
+            ctxt[i] = toupper(ctxt[i]);
         }
 
-        for (i = 0; i < strlen(ptxt)-1; i++) { // Check for bad input
-            if (charCheck(ptxt[i]) == 1) { // If charCheck returns true, exit with error
-                error("ERROR plaintext file contained bad characters.\n");
+        for (i = 0; i < strlen(ctxt)-1; i++) { // Check for bad input
+            if (charCheck(ctxt[i]) == 1) { // If charCheck returns true, exit with error
+                error("ERROR ciphertext file contained bad characters.\n");
             }
         }
 
@@ -200,30 +200,31 @@ int main(int argc, char *argv[]) {
         fclose(fp);
 
         /////* USE KTXT TO ENCRYPT PTXT */////
-        // First, ensure that ktxt is big enough for ptxt
-        if (strlen(ktxt) < strlen(ptxt)) {
-            error("ERROR key is shorter than plaintext.\n");
+        // First, ensure that ktxt is big enough for ctxt
+        if (strlen(ktxt) < strlen(ctxt)) {
+            error("ERROR key is shorter than ciphertext.\n");
         }
 
-        // Then encrypt each char and push to ctxt
-        char ctxt[strlen(ptxt)]; // This will store the ciphertext once generated
+        // Then dencrypt each char and push to ptxt
+        char ptxt[strlen(ctxt)]; // This will store the plaintext once generated
         // These int arrays will store the messages converted into numbers, and their modular sums
-        int pnums[strlen(ptxt)], knums[strlen(ptxt)], cnums[strlen(ptxt)];
+        int cnums[strlen(ctxt)], knums[strlen(ctxt)], pnums[strlen(ctxt)];
         char alpha[28] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ "; // This will be used to reference alphabetical positions
 
-        for (i = 0; i < strlen(ptxt); i++) {    // Iterate through each character in the plaintext
-            pnums[i] = charToInt(ptxt[i]);      // Each index of pnums gets the numeric equivalent of ptxt
+        for (i = 0; i < strlen(ctxt); i++) {    // Iterate through each character in the ciphertext
+            cnums[i] = charToInt(ctxt[i]);      // Each index of cnums gets the numeric equivalent of ctxt
             knums[i] = charToInt(ktxt[i]);      // Each index of knums gets the numeric equivalent of ktxt
-            cnums[i] = pnums[i] + knums[i];     // Each index of cnums gets the sum of pnums+knums
-            if (cnums[i] > 26) {                // Modular addition if the cnum is over 26 (zero is 'A')
-                cnums[i] -= 27;
+            pnums[i] = cnums[i] - knums[i];     // Each index of pnums gets the difference of cnums-knums
+            if (pnums[i] < 0) {                 // Modular subtraction if the pnum is less than zero
+                pnums[i] += 27;
             }
-            ctxt[i] = alpha[cnums[i]];          // Set ctxt[i] equal to the corresponding resulting letter
+            ptxt[i] = alpha[pnums[i]];          // Set ptxt[i] equal to the corresponding resulting letter
         }
+        ptxt[strlen(ctxt)-1] = '\0'; // Null terminate the resulting message
 
         ////* WRITE BACK TO THE CLIENT *////
         bzero(sendbuf, BUFSIZE); // Clear the send buffer so it can be used safely
-        snprintf(sendbuf, BUFSIZE, "%s", ctxt); // Store the cipher string into the buffer
+        snprintf(sendbuf, BUFSIZE, "%s", ptxt); // Store the cipher string into the buffer
         n = write(acceptfd, sendbuf, strlen(sendbuf)); // Write this message back to the client
         if (n < 0) {
             error("ERROR writing to socket.\n");
