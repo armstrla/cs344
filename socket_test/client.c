@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
 
     if (argc < 4) {
        fprintf(stderr,"Usage: %s plaintext key port\n", argv[0]);
-       exit(0);
+       exit(1);
     }
 
     portno = atoi(argv[3]);
@@ -29,6 +29,7 @@ int main(int argc, char *argv[]) {
 
     if (sockfd < 0) {
         error("Client: ERROR opening socket.\n");
+        exit(1);
     }
     
     bzero((char *) &serv_addr, sizeof(serv_addr));
@@ -38,6 +39,7 @@ int main(int argc, char *argv[]) {
 
     if (connect(sockfd,(struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
         error("Client: ERROR connecting.\n");
+        exit(2);
     }
 
     /* SEND PLAINTEXT FILE NAME */
@@ -46,6 +48,7 @@ int main(int argc, char *argv[]) {
     n = write(sockfd, buffer, strlen(buffer));
     if (n < 0) {
         error("Client: ERROR writing argv[1] to socket.\n");
+        exit(1);
     }
 
     sleep(1);
@@ -55,15 +58,19 @@ int main(int argc, char *argv[]) {
     n = write(sockfd, buffer, strlen(buffer));
     if (n < 0) {
         error("Client: ERROR writing argv[2] to socket.\n");
+        exit(1);
     }
 
     /* RECEIVE SERVER RESPONSE */
     bzero(buffer, BUFSIZE);
     n = read(sockfd, buffer, BUFSIZE); // Waiting for server response
-    if (n < 0) 
+    if (n < 0) {
         error("Client: ERROR reading from socket.\n");
+        exit(1);
+    }
 
-    printf("Client received: %s\n", buffer);
-    close(sockfd); 
+    printf("%s\n", buffer);
+    close(sockfd);
+     
     return 0;
 }
