@@ -4,8 +4,7 @@
 #include <time.h>
 
 int main(int argc, char *argv[]) {
-	
-	
+	// Check for correct args/usage
 	if (argc != 2) printf("Usage: %s length\n", argv[0]); // Check for key-length argument
 	else {
 		srand(time(NULL)); // Generate random number seed
@@ -15,9 +14,9 @@ int main(int argc, char *argv[]) {
 		
 		for (i = 0; i < len; i++){ // Loop through and generate each character randomly
 			curChar = "ABCDEFGHIJKLMNOPQRSTUVWXYZ "[random () % 27];
-			key[i] = curChar;
+			key[i] = curChar; // Store this random character at current index
 		}
-		key[len] = '\0'; // Null-terminate the string to avoid extra junk being printed
+		key[len-1] = '\0'; // Null-terminate the string to avoid extra junk being printed
 
 		printf("%s\n", key); // Output the generated string
 	}
