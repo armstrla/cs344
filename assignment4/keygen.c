@@ -4,10 +4,11 @@
 
 int main(int argc, char *argv[]) {
 	srand(time(NULL)); // Generate random number seed
-	int len, i; // Length of key requested, and for-loop controller
+	int i; // Length of key requested, and for-loop controller
+	int len = atoi(argv[1]); // Type cast key-length (string) to integer
 	char curChar, key[len+1]; // Current character to generate, and string for all characters
 	
-	if (argc != 2) printf("Usage: %s <key-length>\n", argv[0]); // Check for key-length argument
+	if (argc != 2) printf("Usage: %s length\n", argv[0]); // Check for key-length argument
 	else {
 		len = atoi(argv[1]); // Type cast key-length (string) to integer
 		
