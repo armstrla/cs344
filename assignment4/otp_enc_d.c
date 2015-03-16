@@ -48,27 +48,25 @@ int main(int argc, char *argv[]) {
     if (sid < 0) {
         exit(EXIT_FAILURE);
     }
-    
+
     // Close out the standard file descriptors (daemon shouldn't have access to terminal)
     close(STDIN_FILENO);
     close(STDOUT_FILENO);
     close(STDERR_FILENO);
 
     /* DAEMON LOGIC OVER--START SOCKET LOGIC */
-    int n = 0;
     int port = atoi(argv[1]); // Grab port from args
-
-    int listenfd = 0, connfd = 0; // Initialize file descriptors
+    int listenfd = 0, connfd = 0, n = 0; // Initialize file descriptors
     struct sockaddr_in serv_addr; // Declare server struct
-
-    char sendBuff[1025]; // Establish send buffer
-    time_t ticks; // Used for date test (debug)
+    char recvBuff[1024]; // Buffer for text that is received
+    char sendBuff[1024]; // Buffer for text that is sent
 
     // Create socket as IP, TCP
     listenfd = socket(AF_INET, SOCK_STREAM, 0);
 
     memset(&serv_addr, '0', sizeof(serv_addr)); // Clear server address
-    memset(sendBuff, '0', sizeof(sendBuff));  // Clear the send buffer
+    //memset(sendBuff, '0', sizeof(sendBuff));  // Clear the send buffer
+    //memset(recvBuff, '0', sizeof(recvBuff));  // Clear the send buffer
 
     // Configure server settings
     serv_addr.sin_family = AF_INET;
@@ -80,7 +78,25 @@ int main(int argc, char *argv[]) {
     listen(listenfd, 10); 
 
     while(1) {
-        connfd = accept(listenfd, (struct sockaddr*)NULL, NULL); 
+        connfd = accept(listenfd, (struct sockaddr*)NULL, NULL);
+        if (connfd < 0) perror("Error: Couldn't accept.\n");
+
+        // Read from client
+	    bzero(recvBuff, 1024);
+	    n = read(newsockfd, buffer, 255);
+	    if (n < 0) perror("Error: Couldn't read from socket.\n");
+	    //printf("Here is the message: %s\n", buffer);
+	    char *ptfname = recvBuff;
+	    FILE *fp;
+		if ((fp = fopen(ptfname,"r")) == NULL) { 
+			perror("Error: File not found.\n"); 
+			exit(1);
+		}
+		// Store contents of file into local string
+
+
+
+		fclose(fp);
 
         //ticks = time(NULL);
         //snprintf(sendBuff, sizeof(sendBuff), "%.24s\r\n", ctime(&ticks));
@@ -90,17 +106,17 @@ int main(int argc, char *argv[]) {
 	    while ((n = read(sockfd, recvBuff, sizeof(recvBuff) - 1)) > 0) {
 	        recvBuff[n] = 0;
 	        if (fputs(recvBuff, stdout) == EOF) {
-	            printf("Error : Fputs error.\n");
+	            perror("Error: Fputs error.\n");
 	        }
 	    }
 
 	    if (n < 0) {
-	        printf("Read error.\n");
+	        perror("Read error.\n");
 	    } 
 
         close(connfd);
         sleep(1);
-     }
+    }
 
 	return 0;
 }

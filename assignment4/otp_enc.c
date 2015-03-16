@@ -55,11 +55,12 @@ int main(int argc, char *argv[]) {
     /* Socket communication */
     int sockfd = 0, n = 0; // Initialize socket file descriptor and read controller
     int port = atoi(argv[1]); // Grab port arg and convert to int
-    //char recvBuff[1024]; // Buffer for text that is received
-    //char sendBuff[1024]; // Buffer for text that is sent
+    char recvBuff[1024]; // Buffer for text that is received
+    char sendBuff[1024]; // Buffer for text that is sent
     struct sockaddr_in serv_addr;  // Info for connecting to server
 
     memset(recvBuff, '0',sizeof(recvBuff)); // Clear receive buffer
+    memset(sendBuff, '0',sizeof(sendBuff)); // Clear send buffer
 
     // Create the socket
     if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
@@ -80,15 +81,21 @@ int main(int argc, char *argv[]) {
     	return 1;
     }
 
+    snprintf(sendBuff, 1024, ptfname);
+
     // TODO: Pass along filenames (plaintext and key) to the daemon and wait for ciphertext response
     // TODO: copy these into the send buffer
-    n = write(sockfd, ptfname, strlen(ptfname));
+    n = write(sockfd, sendBuff, strlen(sendBuff));
     if (n < 0)
         printf("Error: Writing to socket failed.\n");
 
-    n = write(sockfd, keyname, strlen(keyname));
+    memset(sendBuff, '0',sizeof(sendBuff)); // Clear send buffer
+    snprintf(sendBuff, 1024, keyname);
+
+    n = write(sockfd, sendBuff, strlen(sendBuff));
     if (n < 0)
         printf("Error: Writing to socket failed.\n");
+    
     // TODO: Print ciphertext
 
 
